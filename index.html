@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>资产总账</title>
+  <style>
+    :root{--bg:#07090d;--panel:#11151d;--panel2:#171c26;--line:#242b38;--text:#f5f7fb;--muted:#909bad;--green:#57db91;--red:#ff8393;--amber:#ffbd58;--blue:#6aa7ff;--radius:18px}
+    *{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 20% -10%,#182237 0,transparent 35%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh}
+    .wrap{max-width:1120px;margin:auto;padding:26px 18px 60px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}.brand{font-size:17px;font-weight:750;letter-spacing:.3px}.actions{display:flex;gap:8px}.btn{border:1px solid var(--line);background:#111722;color:var(--text);border-radius:12px;padding:9px 12px;font-size:13px;cursor:pointer}.btn:hover{background:#182131}
+    .hero{background:linear-gradient(135deg,rgba(37,53,83,.95),rgba(16,20,28,.96));border:1px solid #2b3547;border-radius:24px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.24)}.eyebrow{font-size:13px;color:#aeb8c9}.total{font-size:clamp(38px,8vw,64px);font-weight:780;line-height:1.05;margin:10px 0 12px;letter-spacing:-2px}.subline{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:13px}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:7px}.status-dot.old{background:var(--amber)}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}.card{background:rgba(17,21,29,.92);border:1px solid var(--line);border-radius:var(--radius);padding:18px}.card h2{font-size:14px;margin:0 0 9px;color:#b7c1d2;font-weight:650}.value{font-size:26px;font-weight:750}.meta{font-size:12px;color:var(--muted);margin-top:8px}.positive{color:var(--green)!important}.negative{color:var(--red)!important}.amber{color:var(--amber)!important}
+    .chart-card{margin-top:14px}.chart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.chart-head h2{margin:0}.chart-range{font-size:12px;color:var(--muted)}canvas{width:100%;height:190px;display:block}
+    .section{margin-top:18px}.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.section h2{font-size:18px;margin:0}.tools{display:flex;gap:8px;flex-wrap:wrap}.input,.select{background:#10151e;border:1px solid var(--line);color:var(--text);padding:9px 11px;border-radius:11px;font-size:13px;outline:none}.input{width:160px}.select{max-width:160px}
+    .table{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:rgba(13,17,24,.94)}.row{display:grid;grid-template-columns:minmax(160px,1.4fr) repeat(3,minmax(120px,1fr));gap:12px;align-items:center;padding:14px 16px;border-top:1px solid var(--line)}.row:first-child{border-top:0}.row.head{font-size:12px;color:var(--muted);background:#111722;padding-top:11px;padding-bottom:11px}.symbol{font-weight:720}.where{font-size:12px;color:var(--muted);margin-top:3px}.num{text-align:right;font-variant-numeric:tabular-nums}.pnl-note{font-size:11px;color:var(--muted);margin-top:3px}.empty{padding:30px;text-align:center;color:var(--muted)}
+    .mask .money,.mask .qty{filter:blur(8px);user-select:none}.foot{margin-top:20px;color:#6f7a8b;font-size:11px;line-height:1.7;text-align:center}
+    @media(max-width:720px){.wrap{padding:18px 12px 40px}.grid{grid-template-columns:1fr}.hero{padding:20px}.row{grid-template-columns:1.3fr 1fr}.row.head .hide-mobile,.row .hide-mobile{display:none}.input{width:135px}.total{letter-spacing:-1px}}
+  </style>
+</head>
+<body>
+  <main class="wrap" id="app">
+    <div class="top"><div class="brand">资产总账</div><div class="actions"><button class="btn" id="privacy">隐藏金额</button><button class="btn" id="refresh">刷新</button></div></div>
+    <section class="hero">
+      <div class="eyebrow">总资产（USD）</div>
+      <div class="total money" id="total">—</div>
+      <div class="subline"><span><i class="status-dot" id="dot"></i><span id="freshness">正在读取</span></span><span id="updated">—</span></div>
+    </section>
+    <section class="grid" id="exchangeGrid"></section>
+    <section class="card chart-card">
+      <div class="chart-head"><h2>总资产走势</h2><div class="chart-range" id="chartRange">最近记录</div></div>
+      <canvas id="chart"></canvas>
+    </section>
+    <section class="section">
+      <div class="section-head"><h2>持仓</h2><div class="tools"><input class="input" id="search" placeholder="搜索代码"><select class="select" id="exchangeFilter"><option value="">全部平台</option></select><select class="select" id="sort"><option value="value">按市值</option><option value="pnl">按盈亏</option><option value="pnlPct">按收益率</option></select></div></div>
+      <div class="table" id="table"></div>
+    </section>
+    <div class="foot">网页只读取 portfolio.json，不包含交易所 API Key、Secret、私钥、助记词或提现权限。公开部署前，请确认你愿意公开这些持仓数据。</div>
+  </main>
+<script>
+const $=s=>document.querySelector(s); let state={data:null,masked:false};
+const usd=v=>v==null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(v);
+const qty=v=>new Intl.NumberFormat('en-US',{maximumFractionDigits:6}).format(v||0);
+const pct=v=>v==null?'—':\`\${v>=0?'+':''}\${(v*100).toFixed(2)}%\`;
+const cls=v=>v==null?'':v>=0?'positive':'negative';
+function timeText(ts){if(!ts)return '—';return new Date(ts).toLocaleString('zh-CN',{hour12:false});}
+async function load(){try{const r=await fetch(\`portfolio.json?t=\${Date.now()}\`,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);state.data=await r.json();render();}catch(e){$('#freshness').textContent='读取失败：'+e.message;$('#dot').classList.add('old');}}
+function render(){const d=state.data;if(!d)return;document.body.classList.toggle('mask',state.masked);$('#total').textContent=usd(d.totalUsd);$('#updated').textContent='更新时间 '+timeText(d.updatedAt);const age=Date.now()-(d.updatedAt||0);$('#freshness').textContent=age<15*60e3?'数据较新':age<2*3600e3?'数据有延迟':'数据较旧';$('#dot').classList.toggle('old',age>=15*60e3);renderExchanges(d);renderChart(d.history||[]);renderTable(d);}
+function renderExchanges(d){const g=$('#exchangeGrid');g.innerHTML='';(d.exchanges||[]).forEach(x=>{const c=document.createElement('div');c.className='card';const pnl=x.pnl==null?'':\`<div class="meta \${cls(x.pnl)}">浮盈亏 \${usd(x.pnl)} · \${pct(x.pnlPercent)}\${x.estimated?' ≈':''}</div>\`;c.innerHTML=\`<h2>\${x.name}\${x.cached?' · 缓存':''}</h2><div class="value money">\${usd(x.totalUsd)}</div>\${pnl}<div class="meta">\${x.mode||''}</div>\`;g.appendChild(c)});}
+function renderChart(rows){const canvas=$('#chart'),ctx=canvas.getContext('2d'),dpr=window.devicePixelRatio||1,w=canvas.clientWidth,h=canvas.clientHeight;canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);if(rows.length<2){ctx.fillStyle='#7f8998';ctx.font='13px sans-serif';ctx.fillText('刷新几次后会形成走势',12,h/2);return}const values=rows.map(x=>Number(x.totalUsd)||0),min=Math.min(...values),max=Math.max(...values),pad=Math.max((max-min)*.15,max*.003,1),lo=min-pad,hi=max+pad;ctx.strokeStyle='#273043';ctx.lineWidth=1;for(let i=1;i<4;i++){const y=h*i/4;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}ctx.strokeStyle='#6aa7ff';ctx.lineWidth=2.5;ctx.beginPath();rows.forEach((x,i)=>{const px=i/(rows.length-1)*w,py=h-(Number(x.totalUsd)-lo)/(hi-lo)*h;i?ctx.lineTo(px,py):ctx.moveTo(px,py)});ctx.stroke();$('#chartRange').textContent=\`\${timeText(rows[0].ts)} 至 \${timeText(rows[rows.length-1].ts)}\`;}
+function renderTable(d){const table=$('#table'),q=$('#search').value.trim().toUpperCase(),ex=$('#exchangeFilter').value,sort=$('#sort').value;let rows=(d.assets||[]).filter(a=>(!q||String(a.symbol).toUpperCase().includes(q))&&(!ex||a.exchange===ex));rows.sort((a,b)=>{if(sort==='pnl')return (b.unrealizedPnl??-1e99)-(a.unrealizedPnl??-1e99);if(sort==='pnlPct')return (b.pnlPercent??-1e99)-(a.pnlPercent??-1e99);return (b.usdValue??-1e99)-(a.usdValue??-1e99)});table.innerHTML='<div class="row head"><div>资产</div><div class="num">市值</div><div class="num hide-mobile">成本</div><div class="num">浮盈亏</div></div>';if(!rows.length){table.innerHTML+='<div class="empty">没有匹配持仓</div>';return}rows.forEach(a=>{const r=document.createElement('div');r.className='row';const approx=a.costStatus==='partial'?'≈ ':'';const isBinance=a.exchange==='Binance';const costText=!isBinance?'—':(a.costBasisUsd==null?'待补':approx+usd(a.costBasisUsd));const pnlText=!isBinance?'—':(a.unrealizedPnl==null?'—':usd(a.unrealizedPnl));const pnlPctText=!isBinance?'—':pct(a.pnlPercent);r.innerHTML=\`<div><div class="symbol">\${a.symbol}</div><div class="where">\${a.exchange} / \${a.account} · <span class="qty">\${qty(a.quantity)}</span></div></div><div class="num money">\${usd(a.usdValue)}</div><div class="num money hide-mobile">\${costText}</div><div class="num \${isBinance?cls(a.unrealizedPnl):''}"><span class="money">\${pnlText}</span><div class="pnl-note">\${pnlPctText}</div></div>\`;table.appendChild(r)});}
+function initFilters(){const set=new Set((state.data?.assets||[]).map(x=>x.exchange).filter(Boolean)),sel=$('#exchangeFilter'),old=sel.value;sel.innerHTML='<option value="">全部平台</option>'+[...set].map(x=>\`<option>\${x}</option>\`).join('');sel.value=old;}
+const oldRender=render;render=function(){oldRender();initFilters();renderTable(state.data)};
+$('#privacy').onclick=()=>{state.masked=!state.masked;$('#privacy').textContent=state.masked?'显示金额':'隐藏金额';render()};$('#refresh').onclick=load;['search','exchangeFilter','sort'].forEach(id=>$('#'+id).addEventListener(id==='search'?'input':'change',()=>state.data&&renderTable(state.data)));window.addEventListener('resize',()=>state.data&&renderChart(state.data.history||[]));load();setInterval(load,30000);
+</script>
+</body>
+</html>
